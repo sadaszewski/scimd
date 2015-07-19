@@ -12,6 +12,7 @@ from markdown.blockprocessors import BlockProcessor
 from markdown.util import etree
 import numpy as np
 from collections import defaultdict
+import numpy.core.defchararray as dca
 
 
 class TableExtension(Extension):
@@ -36,7 +37,8 @@ class TableProcessor(BlockProcessor):
     def run(self, parent, blocks):
         block = blocks.pop(0)
         lines = map(lambda x: list(x.strip()), block.split('\n'))
-        ary = np.array(lines, dtype='|S1')
+        # print 'lines:', lines
+        ary = np.array(lines, dtype='|U1')
         cstart = np.zeros(ary.shape, dtype=np.int)
         cend = np.zeros(ary.shape, dtype=np.int)
         for r in xrange(ary.shape[0]):
@@ -82,7 +84,11 @@ class TableProcessor(BlockProcessor):
             r = len(np.nonzero(rpos < cells[k][0][0])[0])
             c = len(np.nonzero(cpos < cells[k][0][1])[0])
             # print 'Cell', k, 'r:', r, 'c:', c, 'rowspan:', cells[k][2], 'colspan:', cells[k][3]
-            text = '\n'.join(map(lambda x: x.tostring().strip(), ary[cells[k][0][0]:cells[k][1][0]+1, cells[k][0][1]+1:cells[k][1][1]]))
+            text = ary[cells[k][0][0]:cells[k][1][0]+1, cells[k][0][1]+1:cells[k][1][1]]
+            text = map(lambda x: u''.join(x).strip(), text)
+            # text = list(np.ravel(text))
+            # text = np
+            text = u'\n'.join(text) # map(lambda x: x.tostring().strip(), text))
             # print '    %s' % text
             rows[r].append((text, cells[k][2], cells[k][3]))
         for r in xrange(len(rows)):
@@ -90,7 +96,11 @@ class TableProcessor(BlockProcessor):
             tr = etree.SubElement(table, 'tr')
             for c in xrange(len(rows[r])):
                 td = etree.SubElement(tr, 'td')
-                td.text = rows[r][c][0]
+                try:
+                    td.text = rows[r][c][0] # .encode('utf-8')
+                except:
+                    print str(type(block))
+                    raise ValueError(str(rows[r][c][0]) + ' ' + str(type(rows[r][c][0])))
                 td.set('rowspan', str(rows[r][c][1]))
                 td.set('colspan', str(rows[r][c][2]))
         # return table

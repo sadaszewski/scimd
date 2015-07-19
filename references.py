@@ -56,13 +56,13 @@ class ReferencesTreeProcessor(Treeprocessor):
             for ch in el:
                 Q.append(ch)
 
-            if el.tag == 'a' and el.get('href').startswith('#ref_'):
+            if el.tag == 'a' and el.get('href') != None and el.get('href').startswith('#ref_'):
                 # print 'Here'
-                cnt += 1
                 href = el.get('href')
                 if href in M:
                     el.text = M[href]
                 else:
+                    cnt += 1
                     O.append(re.match(r'#ref_([0-9]+)', href).group(1))
                     el.text = M[href] = '[%d]' % cnt
         # print sciref
@@ -86,8 +86,9 @@ class ReferencesTreeProcessor(Treeprocessor):
 class ReferencesBlockProcessor(BlockProcessor):
     def test(self, parent, block):
         # print 'Testing', block, self.lastChild(parent), self.lastChild(parent).text if self.lastChild(parent) is not None else None
+        # return False
         ch = self.lastChild(parent)
-        if ch is not None and ch.text is not None and ch.text.lower() != 'references':
+        if ch is None or ch.text is None or ch.text.lower() != 'references':
             # print 'Early return'
             return False
         if all(map(lambda x: re.match('^[0-9]+\.', x.strip()) is not None, block.split('\n'))):

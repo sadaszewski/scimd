@@ -45,7 +45,8 @@ class FigureProcessor(BlockProcessor):
         block = blocks.pop(0)
         m = re.match(r'[A-Za-z]+ [0-9]+\.', block)
         caption = block[m.span()[1]:].strip()
-        a = etree.SubElement(parent, 'a')
+        p = etree.SubElement(parent, 'p')
+        a = etree.SubElement(p, 'a')
         hash = m.group(0).lower().replace('.','').replace(' ', '_')
         a.set('name', '%s' % hash)
-        a.text = caption
+        a.text = '%s %s' % (m.group(0), caption)
