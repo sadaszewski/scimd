@@ -15,19 +15,43 @@ import numpy as np
 from collections import defaultdict
 import re
 from markdown.inlinepatterns import Pattern
+from markdown.preprocessors import Preprocessor
 
 
 class FigureExtension(Extension):
     def extendMarkdown(self, md, md_globals):
         md.inlinePatterns.add('figref', FigRefPattern(r'\[([A-Za-z]+ [0-9]+)\]', md), '<emphasis')
+        # md.inlinePatterns.add('fig', FigPattern(r'^((Figure|Table|Listing) ([0-9]+))\. (.+)', md), '<emphasis')
         md.parser.blockprocessors.add('figure',
                                       FigureProcessor(md.parser),
                                       '<hashheader')
         md.treeprocessors.add('figure', FigureTreeProcessor(md), '<prettify')
+        # raise ValueError(md.preprocessors)
+        # md.preprocessors.add('figure', FigPreproc(md), '<html_block')
 
 
 def makeExtension(configs={}):
     return FigureExtension(configs=configs)
+
+
+class FigPreproc(Preprocessor):
+    def run(self, lines):
+        new_lines = []
+        in_caption = False
+        for line in lines:
+            m = re.match(r'((Table|Figure|Listing) ([0-9]+))\.', line)
+            if m is not None:
+                new_lines.append(u'<div class="figcaption">')
+                new_lines.append(u'')
+                in_caption = True
+            if line == '' and in_caption:
+                # raise ValueError('Here')
+                new_lines.append('')
+                new_lines.append(u'</div>')
+                in_caption = False
+            new_lines.append(line)
+        # raise ValueError(new_lines)
+        return new_lines
 
 
 class FigRefPattern(Pattern):
@@ -36,6 +60,21 @@ class FigRefPattern(Pattern):
         a = etree.Element('a')
         a.set('href', '#figref_%s' % hash)
         a.text = AtomicString('[%s]' % m.group(2))
+        return a
+
+
+class FigPattern(Pattern):
+    def handleMatch(self, m):
+        caption = m.group(5).strip() # block[m.span()[1]:].strip()
+        # raise ValueError(caption)
+        # p = etree.Element('p')
+        a = etree.Element('a')
+        # raise ValueError(m.group(0))
+        hash = m.group(2).lower().replace('.','').replace(' ', '_')
+        a.set('name', 'figref_%s' % hash)
+        a.set('class', 'figcaption')
+        a.text = '%s. %s' % (m.group(2), caption)
+        # raise ValueError(a.text)
         return a
 
 
@@ -51,8 +90,15 @@ class FigureProcessor(BlockProcessor):
         a = etree.SubElement(p, 'a')
         hash = m.group(0).lower().replace('.','').replace(' ', '_')
         a.set('name', 'figref_%s' % hash)
+        # a.set('class', 'figcaption')
+        # bold = etree.SubElement(a, 'b')
+        # bold.text = m.group(0)
+        # regular = etree.SubElement(a, 'span')
+        # regular.text = caption
         a.text = '%s %s' % (m.group(0), caption)
 
+
+# import sys
 
 class FigureTreeProcessor(Treeprocessor):
     def run(self, root):
@@ -64,15 +110,31 @@ class FigureTreeProcessor(Treeprocessor):
         while len(Q) > 0:
             el = Q.pop(0)
             for ch in el: Q.append(ch)
-            name = el.get('name')
-            if el.tag == 'a' and name is not None and name.startswith('figref_'):
+            # name = el.get('name')
+            name = None
+            if el.tag == 'p' and len(el)>0 and el[0].tag == 'a':
+                name = el[0].get('name')
+
+                # raise ValueError(name)
+            if name is not None and name.startswith('figref_'):
+
+                # raise ValueError(dir(el))
+                # raise ValueError(name)
                 type_ = name.split('_')[1]
-                title = '.'.join(el.text.split('.')[1:])
+
+                if type_ == 'figure':
+                    el.set('class', 'figcaption_img')
+                else:
+                    el.set('class', 'figcaption')
+
+                title = '.'.join(el[0].text.split('.')[1:])
+                # raise ValueError(title)
                 if name not in M:
                     cnt[type_] += 1
                     M[name] = str(cnt[type_])
 
-                el.text = type_[0].upper() + type_[1:] + ' ' + M[name] + '. ' + title
+                # raise ValueError(len(type_))
+                el[0].text = type_[0].upper() + type_[1:] + ' ' + M[name] + '. ' + title
 
         Q = [root]
         while len(Q) > 0:

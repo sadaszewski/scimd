@@ -20,12 +20,12 @@ class ReferencesExtension(Extension):
     def extendMarkdown(self, md, md_globals):
         # print md.inlinePatterns
         md.sciref = {}
-        md.inlinePatterns.add('references', ReferencePattern(r'\[([0-9]+)\]', md), '<emphasis')
-        md.parser.blockprocessors.add('references',
+        md.inlinePatterns.add('myreferences', ReferencePattern(r'\[([0-9]+)\]', md), '<emphasis')
+        md.parser.blockprocessors.add('myreferences',
                                       ReferencesBlockProcessor(md.parser),
                                       '<hashheader')
         # print md.treeprocessors
-        md.treeprocessors.add('references', ReferencesTreeProcessor(md), '<prettify')
+        md.treeprocessors.add('myreferences', ReferencesTreeProcessor(md), '<prettify')
 
 
 def makeExtension(configs={}):
