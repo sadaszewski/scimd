@@ -33,14 +33,15 @@ class MyTocTreeProcessor(Treeprocessor):
         # print 'Running...', dir(self)
         hdrtags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6']
 
-        Q = [root]
+        Q = [[None, 0, root]]
         cnt = []
         active = False
         toc = ''
         while len(Q) > 0:
-            el = Q.pop(0)
-            for ch in el:
-                Q.append(ch)
+            [parent, idx, el] = Q.pop(0)
+            for i in xrange(len(el)): # .iteritems():
+                ch = el[i]
+                Q.append([el, i, ch])
 
             # print el.tag
             if el.tag == 'p' and el.text == 'CONTENT-START':
@@ -51,8 +52,13 @@ class MyTocTreeProcessor(Treeprocessor):
                 active = True
             elif el.tag == 'p' and el.text == 'CONTENT-END':
                 active = False
+                root.remove(el)
             elif active and el.tag in hdrtags:
+
+
                 lvl = int(el.tag[1])
+                # lvl = min(lvl, 3)
+                if lvl > 3: continue
 
                 cnt2 = cnt[0:lvl]
                 if len(cnt2) == lvl:
@@ -62,13 +68,26 @@ class MyTocTreeProcessor(Treeprocessor):
 
                 nmbrs = '.'.join(map(str, cnt2)) + '. '
 
+                tgt = etree.Element('a')
+                tgt.set('name', 'hdr' + nmbrs[:-2].replace('.', '_'))
+                for idx in xrange(len(parent)):
+                    if parent[idx] == el:
+                        break
+                parent.insert(idx, tgt)
+                #el.setparent(tgt)
+                parent.remove(el)
+                tgt.append(el)
+                #el.insert(0, tgt)
+                #el.set('name', 'hdr' + nmbrs[:-2])
+
+                entry = '<li><a href="#hdr' + nmbrs[:-2].replace('.', '_') + '">' + nmbrs + el.text + '</a><a class="pagenum" href="#hdr' + nmbrs[:-2].replace('.', '_') + '"></a><span class="tocline"></span>'
                 if lvl == len(cnt):
-                    toc += '</li><li>' + nmbrs + el.text
+                    toc += '</li>' + entry
                 elif lvl == len(cnt) + 1:
-                    toc += '<ol style="list-style-type: none;"><li>' + nmbrs + el.text
+                    toc += '<ol style="list-style-type: none;">' + entry
                 elif lvl < len(cnt):
                     toc += '</li></ol>' * (len(cnt) - lvl)
-                    toc += '</li><li>' + nmbrs + el.text
+                    toc += '</li>' + entry
                 else:
                     raise ValueError('Improper nesting: %d %d' % (lvl, len(cnt)))
 
