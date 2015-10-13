@@ -81,6 +81,7 @@ class MyTocTreeProcessor(Treeprocessor):
                 #el.set('name', 'hdr' + nmbrs[:-2])
 
                 entry = '<li><a href="#hdr' + nmbrs[:-2].replace('.', '_') + '">' + nmbrs + el.text + '</a><a class="pagenum" href="#hdr' + nmbrs[:-2].replace('.', '_') + '"></a><span class="tocline"></span>'
+                # toc_tex += '\contentsline {' + ['', 'section', 'subsection', 'subsubsection'][lvl] + '}{}{' +
                 if lvl == len(cnt):
                     toc += '</li>' + entry
                 elif lvl == len(cnt) + 1:
@@ -111,3 +112,7 @@ class MyTocTreeProcessor(Treeprocessor):
             if el.tag == 'p' and el.text == 'TABLE-OF-CONTENT':
                 el.text = ''
                 el.append(toc.getroot())
+
+        # f = open('test.toc', 'wb')
+        # f.write(toc_tex)
+        # f.close()

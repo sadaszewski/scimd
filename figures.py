@@ -179,6 +179,8 @@ class FigureTreeProcessor(Treeprocessor):
 
                 if type_ == 'figure':
                     el.set('class', 'figcaption_img')
+                elif type_ == 'algorithm':
+                    el.set('class', 'figcaption_algo')
                 else:
                     el.set('class', 'figcaption')
 
@@ -187,10 +189,17 @@ class FigureTreeProcessor(Treeprocessor):
                 if name not in M:
                     cnt[nmbrs + type_] += 1
                     M[name] = nmbrs + str(cnt[nmbrs + type_])
-                    L[type_].append({'href': '#' + name, 'el': el, 'text': type_[0].upper() + type_[1:] + ' ' + M[name] + '.' + ''.join(stringify(el).split('.')[1]) + '.'}) #  + _captions[name]})
+                    L[type_].append({'href': '#' + name, 'el': el, 'text': type_[0].upper() + type_[1:] + ' ' + M[name] + '.' + ''.join(stringify(el).split('.')[1])}) #  + _captions[name]})
 
                 # raise ValueError(len(type_))
-                el[0].text = type_[0].upper() + type_[1:] + ' ' + M[name] + '. ' + title
+
+                span = etree.Element('span')
+                el[0].insert(0, span)
+                span2 = etree.SubElement(span, 'span')
+                span2.text = type_[0].upper() + type_[1:] + ' ' + M[name] + '. '
+                span2.tail = title
+                el[0].text = ''
+
 
         md = self.markdown
         this = self
@@ -232,13 +241,13 @@ class FigureTreeProcessor(Treeprocessor):
                 #    cnt[type_] += 1
                 #    M[href] = str(cnt[type_])
 
-                el.text = '[%s %s]' % (type_[0].upper() + type_[1:], M[href[1:]])
+                el.text = '%s %s' % (type_[0].upper() + type_[1:], M[href[1:]])
             elif el.tag == 'p' and el.text is not None and el.text.startswith('LIST-OF-'):
                 type_ = el.text[8:-1].lower()
                 # raise ValueError(L['figure'])
                 for fig in L[type_]:
                     p = etree.Element('p')
-                    p.set('style', 'width: 75%;')
+                    p.set('style', 'text-align: left; width: 75%;')
                     # p.text = fig['text']
                     a = etree.SubElement(p, 'a')
                     a.set('href', fig['href'])
